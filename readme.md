@@ -1,6 +1,6 @@
   <h1>Aplicação Lista de Recados</h1>
 
- Um <strong>back-end</strong> que contém
+ Uma <strong>API</strong> que contém
 as seguintes funcionalidades:
 - Criação de conta
 - Login
