@@ -9,7 +9,7 @@ app.listen(8080, () => console.log("Servidor iniciado!"));
 const listaUsuarios = []
 
 app.get('/', (req, res) => {
-  return res.status(200).send('<h1>Bem vindo a Aplicação de Recados!</h1><h2>endpoints</h2><ul><li>GET /users - listar usuários</li><li>GET /users/:id - listar usuário pelo ID</li><li>POST /users - criar um usuário</li><li>POST /login - logar usuário</li><li>POST /recados - criar recado</li><li>DELETE /recados/:id - deletar recado por ID</li><li>PUT /recados - atualizar recado</li></ul>')
+  return res.status(200).send('<h1>Bem vindo a Aplicação de Recados!</h1><h2>endpoints</h2><ul><li>GET /users - listar usuários</li><li>GET /users/:id - listar usuário pelo ID</li><li>POST /users - criar um usuário</li><li>POST /login - logar usuário</li><li>POST /recados - criar recado</li><li>GET /recados - listar recados usuario logado</li><li>DELETE /recados/:id - deletar recado por ID</li><li>PUT /recados - atualizar recado</li></ul>')
 })
 
 app.get('/users', (req, res) => {
@@ -154,6 +154,23 @@ app.post('/recados', (req, res) => {
     sucesso: true,
     dados: recado,
     mensagem: 'Recado criado com sucesso!'
+  })
+})
+
+app.get('/recados', (req, res) => {
+  const sessao = listaUsuarios.find(user => user.logged === true)
+
+  if(!sessao) {
+    return res.status(401).json({
+      sucesso: false,
+      mensagem: 'É necessário estar logado no sistema para listar recados'
+    })
+  }
+
+  return res.status(200).json({
+    sucesso: true,
+    dados: sessao.recados,
+    mensagem: 'Recados do usuário listados com sucesso!'
   })
 })
 
