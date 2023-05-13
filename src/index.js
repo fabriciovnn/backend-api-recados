@@ -4,7 +4,7 @@ const app = express();
 
 app.use(express.json());
 
-app.listen(8080, () => console.log("Servidor iniciado"));
+app.listen(8080, () => console.log("Servidor iniciado!"));
 
 const listaUsuarios = []
 
