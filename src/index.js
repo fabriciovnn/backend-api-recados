@@ -1,23 +1,17 @@
 import express from 'express';
 
-//criacao do app api servidor
 const app = express();
 
-//parse / converte o JSON para o formato que o dado for(array, objeto, string, number...)
 app.use(express.json());
 
 app.listen(8080, () => console.log("Servidor iniciado"));
 
-
-//DATABASE
 const listaUsuarios = []
 
-//Bem vindo da aplicação
 app.get('/', (req, res) => {
-  return res.status(200).send('<h1>Bem vindo a Aplicação de Recados!</h1>')
+  return res.status(200).send('<h1>Bem vindo a Aplicação de Recados!</h1><h2>endpoints</h2><ul><li>GET /users - listar usuários</li><li>GET /users/:id - listar usuário pelo ID</li><li>POST /users - criar um usuário</li><li>POST /login - logar usuário</li><li>POST /recados - criar recado</li><li>DELETE /recados/:id - deletar recado por ID</li><li>PUT /recados - atualizar recado</li></ul>')
 })
 
-// Listar Usuários
 app.get('/users', (req, res) => {
 
   if(!listaUsuarios.length) {
@@ -34,7 +28,6 @@ app.get('/users', (req, res) => {
   })
 })
 
-//Listar usuário por id
 app.get('/users/:id', (req, res) => {
   const params = req.params
   const usuarioEncontrado = listaUsuarios.find((user) => user.id == params.id)
@@ -49,53 +42,66 @@ app.get('/users/:id', (req, res) => {
   return res.status(200).json({
     sucesso: true,
     dados: usuarioEncontrado,
-    mensagem: 'Usuário encontrado com sucesso!'})
+    mensagem: 'Usuário encontrado pelo ID com sucesso!'})
 })
 
-//Criação de conta
 app.post('/users', (req, res) => {
   const dados = req.body
 
 if(!dados.nome || (dados.nome.length < 2)) {
-  return res.status(400).json('É obrigatório informar o nome do usuário.')
+  return res.status(401).json({
+    sucesso: false,
+    dados: null,
+    mensagem: 'É obrigatório informar o nome do usuário.'})
 }
 
 if(!dados.email || !dados.email.includes('@') || !dados.email.includes('.com')) {
-  return res.status(400).json('É obrigatório informar um email válido para cadastro de usuário.')
+  return res.status(401).json({   
+    sucesso: false,
+    dados: null,
+    mensagem: 'É obrigatório informar um email válido para cadastro de usuário.'})
 }
 
 const usuarioCadastrado = listaUsuarios.some((user) => user.email === dados.email)
 if(usuarioCadastrado) {
-  return res.status(400).json('Este email já possui um cadastro em nosso sistema')
+  return res.status(401).json({
+    sucesso: false,
+    dados: null,
+    mensagem: 'Este email já possui um cadastro em nosso sistema'})
 }
 
 
-if(!dados.password || (dados.password.length < 5)) {
-  return res.status(400).json('É necessário informar uma senha válida com no mínimo 5 dígitos')
+if(!dados.senha || (dados.senha.length < 5)) {
+  return res.status(401).json({
+    sucesso: false,
+    dados: null,
+    mensagem: 'É necessário informar uma senha válida com no mínimo 5 dígitos'})
 }
 
 const usuario = {
   nome: dados.nome,
   email: dados.email,
-  password: dados.password,
+  senha: dados.senha,
   id: new Date().getTime(),
   recados: [],
   logged: false
 }
 
 listaUsuarios.push(usuario)
-return res.status(201).json('Usuário cadastrado com sucesso!')
+return res.status(201).json({
+  sucesso: true,
+  dados: usuario,
+  mensagem: 'Usuário cadastrado com sucesso!'})
 })
 
-//Login
 app.post('/login', (req, res) => {
   const dados = req.body
   
   const emailCorreto = listaUsuarios.some((user) => user.email === dados.email)
-  const senhaCorreta = listaUsuarios.some((user) => user.password === dados.password)
+  const senhaCorreta = listaUsuarios.some((user) => user.senha === dados.senha)
 
   if(!emailCorreto || !senhaCorreta) {
-    res.status(400).json({
+    res.status(401).json({
       sucesso: false,
       dados: null,
       mensagem: 'Email ou senha estão incorretos.'})
@@ -106,7 +112,7 @@ app.post('/login', (req, res) => {
   const usuario = listaUsuarios.find((user) => user.email === dados.email)
   usuario.logged = true
 
-  res.status(200).json({
+  res.status(201).json({
     sucesso: true,
     dados: usuario,
     mensagem: 'Usuário logado com sucesso!'
@@ -114,14 +120,13 @@ app.post('/login', (req, res) => {
 
 })
 
-//Recados
 app.post('/recados', (req, res) => {
   const dados = req.body
 
   // usuario informar email
   const usuario = listaUsuarios.find((user) => user.email === dados.email)
   if(!usuario || !usuario.logged) {
-    return res.status(400).json({
+    return res.status(401).json({
       sucesso: false,
       dados: null,
       mensagem: 'É obrigatório estar cadastrado e logado no sistema para criar um recado.'
@@ -129,7 +134,7 @@ app.post('/recados', (req, res) => {
   }
 
   if(!dados.titulo || !dados.descricao || !dados.email || !dados.email.includes('@') || !dados.email.includes('.com')) {
-    return res.status(400).json({
+    return res.status(401).json({
       sucess: false,
       dados: null,
       mensagem: 'É obrigatório informar email válido, titulo do recado e descrição do recado.'
@@ -145,14 +150,13 @@ app.post('/recados', (req, res) => {
 
   usuario.recados.push(recado)
 
-  return res.status(200).json({
+  return res.status(201).json({
     sucesso: true,
     dados: recado,
     mensagem: 'Recado criado com sucesso!'
   })
 })
 
-//Deletar Recados
 app.delete('/recados/:id', (req, res) => {
   const id = req.params.id
  
@@ -176,7 +180,7 @@ app.delete('/recados/:id', (req, res) => {
   const sessao = autorRecados[0].logged
 
   if(!sessao) {
-    return res.status(400).json({
+    return res.status(401).json({
       sucesso: false,
       mensagem: 'É necessário estar logado no sistema para deletar um recado'
     })
@@ -193,7 +197,6 @@ app.delete('/recados/:id', (req, res) => {
   })
 })
 
-//atualizar recados
 app.put('/recados', (req, res) => {
   const novoRecado = req.body
  
@@ -217,7 +220,7 @@ app.put('/recados', (req, res) => {
   const sessao = autorRecados[0].logged
 
   if(!sessao) {
-    return res.status(400).json({
+    return res.status(401).json({
       sucesso: false,
       mensagem: 'É necessário estar logado no sistema para atualizar um recado'
     })
