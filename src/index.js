@@ -1,10 +1,12 @@
 import express from 'express';
+import cors from 'cors';
 
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 
-app.listen(8080, () => console.log("Servidor iniciado!"));
+app.listen(8080, () => console.log("Server running on port 8080"));
 
 const listaUsuarios = []
 
@@ -159,6 +161,15 @@ app.post('/recados', (req, res) => {
 
 app.get('/recados', (req, res) => {
   const sessao = listaUsuarios.find(user => user.logged === true)
+  const queryParametro = req.query
+
+  const pagina = Number(queryParametro.pagina) || 1
+  const limite = 5
+  const totalPaginas = Math.ceil(sessao.recados.length / limite)
+  const indice = (pagina - 1) * limite
+  const aux = [...sessao.recados]
+  const resultado = aux.splice(indice, limite)
+
 
   if(!sessao) {
     return res.status(401).json({
@@ -167,10 +178,13 @@ app.get('/recados', (req, res) => {
     })
   }
 
-  return res.status(200).json({
+  return res.status(201).json({
     sucesso: true,
-    dados: sessao.recados,
-    mensagem: 'Recados do usuário listados com sucesso!'
+    paginaAtual: pagina,
+    totalRegistros: sessao.recados.length,
+    totalPaginas: totalPaginas,
+    mensagem: `Recados do usuário ${sessao.email} listados com sucesso!`,
+    dados: resultado
   })
 })
 
