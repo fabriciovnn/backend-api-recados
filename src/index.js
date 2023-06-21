@@ -35,7 +35,7 @@ app.get('/users/:id', (req, res) => {
   const usuarioEncontrado = listaUsuarios.find((user) => user.id == params.id)
 
   if(!usuarioEncontrado) {
-    return res.status(400).json({
+    return res.status(404).json({
       sucesso: false,
       dados: null,
       mensagem: 'Usuário não encontrado pelo ID informado'})
@@ -51,14 +51,14 @@ app.post('/users', (req, res) => {
   const dados = req.body
 
 if(!dados.nome || (dados.nome.length < 2)) {
-  return res.status(401).json({
+  return res.status(400).json({
     sucesso: false,
     dados: null,
     mensagem: 'É obrigatório informar o nome do usuário.'})
 }
 
 if(!dados.email || !dados.email.includes('@') || !dados.email.includes('.com')) {
-  return res.status(401).json({   
+  return res.status(400).json({   
     sucesso: false,
     dados: null,
     mensagem: 'É obrigatório informar um email válido para cadastro de usuário.'})
@@ -66,7 +66,7 @@ if(!dados.email || !dados.email.includes('@') || !dados.email.includes('.com')) 
 
 const usuarioCadastrado = listaUsuarios.some((user) => user.email === dados.email)
 if(usuarioCadastrado) {
-  return res.status(401).json({
+  return res.status(400).json({
     sucesso: false,
     dados: null,
     mensagem: 'Este email já possui um cadastro em nosso sistema'})
@@ -74,7 +74,7 @@ if(usuarioCadastrado) {
 
 
 if(!dados.senha || (dados.senha.length < 5)) {
-  return res.status(401).json({
+  return res.status(400).json({
     sucesso: false,
     dados: null,
     mensagem: 'É necessário informar uma senha válida com no mínimo 5 dígitos'})
@@ -98,25 +98,21 @@ return res.status(201).json({
 
 app.post('/login', (req, res) => {
   const dados = req.body
-  
-  const emailCorreto = listaUsuarios.some((user) => user.email === dados.email)
-  const senhaCorreta = listaUsuarios.some((user) => user.senha === dados.senha)
 
-  if(!emailCorreto || !senhaCorreta) {
+  const usuarioEncontrado = listaUsuarios.find((user) => user.email === dados.email && user.senha === dados.senha)
+
+  if(!usuarioEncontrado) {
     res.status(401).json({
       sucesso: false,
       dados: null,
       mensagem: 'Email ou senha estão incorretos.'})
   }
 
-  listaUsuarios.forEach((user) => user.logged = false)
-
-  const usuario = listaUsuarios.find((user) => user.email === dados.email)
-  usuario.logged = true
+  listaUsuarios.forEach((user) => user.logged = user.email === usuarioEncontrado.email)
 
   res.status(201).json({
     sucesso: true,
-    dados: usuario,
+    dados: usuarioEncontrado,
     mensagem: 'Usuário logado com sucesso!'
   })
 
@@ -126,31 +122,23 @@ app.post('/recados', (req, res) => {
   const dados = req.body
 
   // usuario informar email
-  const usuario = listaUsuarios.find((user) => user.email === dados.email)
-  if(!usuario || !usuario.logged) {
+  const posicaoUsuario = listaUsuarios.findIndex((user) => user.logged === true)
+  if(posicaoUsuario < 0) {
     return res.status(401).json({
       sucesso: false,
       dados: null,
-      mensagem: 'É obrigatório estar cadastrado e logado no sistema para criar um recado.'
-    })
-  }
-
-  if(!dados.titulo || !dados.descricao || !dados.email || !dados.email.includes('@') || !dados.email.includes('.com')) {
-    return res.status(401).json({
-      sucess: false,
-      dados: null,
-      mensagem: 'É obrigatório informar email válido, titulo do recado e descrição do recado.'
+      mensagem: 'É obrigatório estar logado no sistema para criar um recado.'
     })
   }
 
   const recado = {
     titulo: dados.titulo,
     descricao: dados.descricao,
-    autor: usuario.email,
+    autor: listaUsuarios[posicaoUsuario].email,
     id: new Date().getTime()
   }
 
-  usuario.recados.push(recado)
+  listaUsuarios[posicaoUsuario].recados.push(recado)
 
   return res.status(201).json({
     sucesso: true,
@@ -160,18 +148,18 @@ app.post('/recados', (req, res) => {
 })
 
 app.get('/recados', (req, res) => {
-  const sessao = listaUsuarios.find(user => user.logged === true)
+  const usuarioEncontrado = listaUsuarios.findIndex(user => user.logged === true)
   const queryParametro = req.query
 
   const pagina = Number(queryParametro.pagina) || 1
   const limite = 5
-  const totalPaginas = Math.ceil(sessao.recados.length / limite)
+  const totalPaginas = Math.ceil(usuarioEncontrado.recados.length / limite)
   const indice = (pagina - 1) * limite
-  const aux = [...sessao.recados]
+  const aux = [...usuarioEncontrado.recados]
   const resultado = aux.splice(indice, limite)
 
 
-  if(!sessao) {
+  if(usuarioEncontrado < 0) {
     return res.status(401).json({
       sucesso: false,
       mensagem: 'É necessário estar logado no sistema para listar recados'
@@ -181,9 +169,9 @@ app.get('/recados', (req, res) => {
   return res.status(201).json({
     sucesso: true,
     paginaAtual: pagina,
-    totalRegistros: sessao.recados.length,
+    totalRegistros: usuarioEncontrado.recados.length,
     totalPaginas: totalPaginas,
-    mensagem: `Recados do usuário ${sessao.email} listados com sucesso!`,
+    mensagem: `Recados do usuário ${usuarioEncontrado.email} listados com sucesso!`,
     dados: resultado
   })
 })
@@ -208,9 +196,9 @@ app.delete('/recados/:id', (req, res) => {
     })
   }
 
-  const sessao = autorRecados[0].logged
+  const usuarioEncontrado = autorRecados[0].logged
 
-  if(!sessao) {
+  if(!usuarioEncontrado) {
     return res.status(401).json({
       sucesso: false,
       mensagem: 'É necessário estar logado no sistema para deletar um recado'
