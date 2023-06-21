@@ -123,11 +123,20 @@ app.post('/recados', (req, res) => {
 
   // usuario informar email
   const posicaoUsuario = listaUsuarios.findIndex((user) => user.logged === true)
+
   if(posicaoUsuario < 0) {
     return res.status(401).json({
       sucesso: false,
       dados: null,
       mensagem: 'É obrigatório estar logado no sistema para criar um recado.'
+    })
+  }
+
+  if(!dados.titulo || !dados.descricao) {
+    return res.status(401).json({
+      sucesso: false,
+      dados: null,
+      mensagem: 'É necessário informar um título e descrição do recado'
     })
   }
 
@@ -148,7 +157,7 @@ app.post('/recados', (req, res) => {
 })
 
 app.get('/recados', (req, res) => {
-  const usuarioEncontrado = listaUsuarios.findIndex(user => user.logged === true)
+  const usuarioEncontrado = listaUsuarios.find(user => user.logged === true)
   const queryParametro = req.query
 
   const pagina = Number(queryParametro.pagina) || 1
